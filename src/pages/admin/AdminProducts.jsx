@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import api from "../../services/api";
 import toast from "react-hot-toast";
 
 const AdminProducts = () => {
@@ -9,9 +9,8 @@ const AdminProducts = () => {
   const fetchProducts = async () => {
     const token = localStorage.getItem("token");
     try {
-      const res = await axios.get(
-        `http://127.0.0.1:8000/api/admin/products?type=${type}`,
-        { headers: { Authorization: `Bearer ${token}` } },
+      const res = await api.get(
+        `/admin/products?type=${type}`,
       );
       setProducts(res.data);
     } catch (e) {}
@@ -23,8 +22,8 @@ const AdminProducts = () => {
 
   const handleApprove = async (id) => {
     try {
-      await axios.post(
-        `http://127.0.0.1:8000/api/admin/verifications/${id}/approve`,
+      await api.post(
+        `/admin/verifications/${id}/approve`,
         {},
         {
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
@@ -66,11 +65,10 @@ const AdminProducts = () => {
                 toast.dismiss(t.id);
                 const loadingToast = toast.loading("Устгаж байна...");
                 try {
-                  await axios.delete(
-                    `http://127.0.0.1:8000/api/admin/products/${id}`,
+                  await api.delete(
+                    `/admin/products/${id}`,
                     {
                       headers: {
-                        Authorization: `Bearer ${localStorage.getItem("token")}`,
                       },
                     },
                   );

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import axios from "axios";
+import api from "../services/api";
 import toast from "react-hot-toast";
 
 const ResetPassword = () => {
@@ -12,7 +12,7 @@ const ResetPassword = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await axios.post("http://127.0.0.1:8000/api/reset-password", {
+      await api.post("/reset-password", {
         token: searchParams.get("token"),
         email: searchParams.get("email"),
         password: password,

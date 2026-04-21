@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useSearchParams, useNavigate, Link } from "react-router-dom";
-import axios from "axios";
+import api from "../services/api";
 
 const VerifyEmailPage = () => {
   const [searchParams] = useSearchParams();
@@ -24,7 +24,7 @@ const VerifyEmailPage = () => {
 
     const verifyEmail = async () => {
       try {
-        const res = await axios.post("http://127.0.0.1:8000/api/email/verify", {
+        const res = await api.post("/email/verify", {
           id,
           hash,
         });

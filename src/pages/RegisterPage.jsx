@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import axios from "axios";
+import api from "../services/api";
 import toast from "react-hot-toast";
 
 const RegisterPage = () => {
@@ -32,8 +32,8 @@ const RegisterPage = () => {
 
     try {
       // API руу мэдээллийг илгээх
-      const response = await axios.post(
-        "http://127.0.0.1:8000/api/register",
+      const response = await api.post(
+        "/register",
         formData,
       );
 

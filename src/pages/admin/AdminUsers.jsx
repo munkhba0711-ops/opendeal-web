@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import api from "../../services/api";
 import toast from "react-hot-toast";
 
 const AdminUsers = () => {
@@ -8,7 +8,7 @@ const AdminUsers = () => {
   const fetchUsers = async () => {
     const token = localStorage.getItem("token");
     try {
-      const res = await axios.get("http://127.0.0.1:8000/api/admin/users", {
+      const res = await api.get("/admin/users", {
         headers: { Authorization: `Bearer ${token}` },
       });
       setUsers(res.data);
@@ -21,8 +21,8 @@ const AdminUsers = () => {
 
   const handleToggleBlock = async (id) => {
     try {
-      const res = await axios.post(
-        `http://127.0.0.1:8000/api/admin/users/${id}/toggle-block`,
+      const res = await api.post(
+        `/admin/users/${id}/toggle-block`,
         {},
         {
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },

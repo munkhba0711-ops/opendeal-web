@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from "react";
+﻿import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import axios from "axios";
+import api from "../services/api";
 import toast from "react-hot-toast";
 
 const ProfilePage = () => {
@@ -54,12 +54,7 @@ const ProfilePage = () => {
     }
 
     try {
-      const response = await axios.get(
-        "http://127.0.0.1:8000/api/profile/data",
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        },
-      );
+      const response = await api.get("/profile/data");
 
       const allOrders = response.data.activeOrders || [];
       setPendingOrders(
@@ -98,20 +93,14 @@ const ProfilePage = () => {
     const formData = new FormData();
     formData.append("avatar", file);
 
-    const token = localStorage.getItem("token");
     setUploading(true);
 
     try {
-      const response = await axios.post(
-        "http://127.0.0.1:8000/api/profile/avatar",
-        formData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "multipart/form-data",
-          },
+      const response = await api.post("/profile/avatar", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
         },
-      );
+      });
 
       // 1. Дэлгэцийн мэдээллийг шинэчлэх
       setUser(response.data.user);
@@ -134,11 +123,7 @@ const ProfilePage = () => {
     if (!token) return;
 
     try {
-      const response = await axios.post(
-        "http://127.0.0.1:8000/api/profile/avatar/delete",
-        {},
-        { headers: { Authorization: `Bearer ${token}` } },
-      );
+      const response = await api.post("/profile/avatar/delete", {});
 
       setUser(response.data.user);
       localStorage.setItem("user", JSON.stringify(response.data.user));
@@ -150,15 +135,8 @@ const ProfilePage = () => {
   };
 
   const handleAcceptRequest = async (id) => {
-    const token = localStorage.getItem("token");
     try {
-      await axios.post(
-        `http://127.0.0.1:8000/api/requests/accept/${id}`,
-        {},
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        },
-      );
+      await api.post(`/requests/accept/${id}`, {});
       toast.success("Саналыг зөвшөөрлөө! Захиалга үүслээ.");
       fetchProfileData(); // Датаг шинээр татах
     } catch (e) {
@@ -167,15 +145,8 @@ const ProfilePage = () => {
   };
 
   const handleDeclineRequest = async (id) => {
-    const token = localStorage.getItem("token");
     try {
-      await axios.post(
-        `http://127.0.0.1:8000/api/requests/decline/${id}`,
-        {},
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        },
-      );
+      await api.post(`/requests/decline/${id}`, {});
       toast.success("Саналыг татгалзлаа.");
       fetchProfileData(); // Датаг шинэчлэх
     } catch (e) {
@@ -184,15 +155,8 @@ const ProfilePage = () => {
   };
 
   const handlePayOrder = async (id) => {
-    const token = localStorage.getItem("token");
     try {
-      await axios.post(
-        `http://127.0.0.1:8000/api/orders/pay/${id}`,
-        {},
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        },
-      );
+      await api.post(`/orders/pay/${id}`, {});
       toast.success("Төлбөр амжилттай! Бараа таных боллоо.");
       fetchProfileData(); // Датаг шинээр татах
     } catch (e) {
@@ -242,11 +206,8 @@ const ProfilePage = () => {
                 toast.dismiss(t.id); // Эхлээд асуусан цонхоо хаана
                 const loadingToast = toast.loading("Устгаж байна..."); // Уншиж буй төлөв харуулна
 
-                const token = localStorage.getItem("token");
                 try {
-                  await axios.delete(`http://127.0.0.1:8000/api/orders/${id}`, {
-                    headers: { Authorization: `Bearer ${token}` },
-                  });
+                  await api.delete(`/orders/${id}`);
                   toast.success("Захиалга амжилттай устгагдлаа!", {
                     id: loadingToast,
                   });
@@ -306,14 +267,8 @@ const ProfilePage = () => {
               onClick={async () => {
                 toast.dismiss(t.id);
                 const loadingToast = toast.loading("Устгаж байна...");
-                const token = localStorage.getItem("token");
                 try {
-                  await axios.delete(
-                    `http://127.0.0.1:8000/api/purchase-requests/${id}`,
-                    {
-                      headers: { Authorization: `Bearer ${token}` },
-                    },
-                  );
+                  await api.delete(`/purchase-requests/${id}`);
                   toast.success("Хүсэлт цуцлагдлаа!", { id: loadingToast });
                   fetchProfileData();
                 } catch (error) {

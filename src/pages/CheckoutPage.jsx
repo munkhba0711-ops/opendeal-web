@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
-import axios from "axios";
+import api from "../services/api";
 import toast from "react-hot-toast";
 
 const CheckoutPage = () => {
@@ -71,8 +71,8 @@ const CheckoutPage = () => {
     // 3. ШУУД ХУДАЛДАЖ АВАХ БОЛ (API-аас татах)
     const fetchSingleProduct = async () => {
       try {
-        const response = await axios.get(
-          `http://127.0.0.1:8000/api/products/${id}`,
+        const response = await api.get(
+          `/products/${id}`,
         );
         const product = response.data.product;
 
@@ -117,13 +117,12 @@ const CheckoutPage = () => {
 
       // АЛХАМ 1: Аль хэдийнэ үүссэн захиалга байвал зөвхөн хаягийг нь UPDATE хийж, нийт үнээ бааз руу явуулах
       if (location.state?.existingOrderId) {
-        await axios.put(
-          `http://127.0.0.1:8000/api/orders/${location.state.existingOrderId}/shipping`,
+        await api.put(
+          `/orders/${location.state.existingOrderId}/shipping`,
           {
             shipping_info: shippingInfo,
             total_price: priceDetails.totalAmount, // Эцсийн мөнгийг баазад илгээх
           },
-          { headers: { Authorization: `Bearer ${token}` } },
         );
 
         navigate(`/payment/${location.state.existingOrderId}`, {
@@ -145,14 +144,13 @@ const CheckoutPage = () => {
               : item.price,
         }));
 
-        const res = await axios.post(
-          "http://127.0.0.1:8000/api/orders/cart/checkout",
+        const res = await api.post(
+          "/orders/cart/checkout",
           {
             items: itemsData,
             shipping_info: shippingInfo,
             total_price: priceDetails.totalAmount,
           },
-          { headers: { Authorization: `Bearer ${token}` } },
         );
 
         navigate(`/payment/cart`, {
@@ -168,14 +166,13 @@ const CheckoutPage = () => {
       }
       // АЛХАМ 3: Цоо шинэ ганц бараа захиалах
       else {
-        const res = await axios.post(
-          "http://127.0.0.1:8000/api/orders",
+        const res = await api.post(
+          "/orders",
           {
             product_id: checkoutItems[0].id,
             shipping_info: shippingInfo,
             total_price: priceDetails.totalAmount,
           },
-          { headers: { Authorization: `Bearer ${token}` } },
         );
         navigate(`/payment/${res.data.order.id}`, {
           state: {

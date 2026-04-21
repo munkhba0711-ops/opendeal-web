@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import axios from "axios";
+import api from "../services/api";
 
 const Header = () => {
   // === 1. DARK MODE STATE БОЛОН ФУНКЦ ===
@@ -81,8 +81,8 @@ const Header = () => {
 
     if (value.trim().length > 1) {
       try {
-        const res = await axios.get(
-          `http://127.0.0.1:8000/api/search-suggestions?q=${value}`,
+        const res = await api.get(
+          `/search-suggestions?q=${value}`,
         );
         setSuggestions(res.data);
         setShowSuggestions(true);

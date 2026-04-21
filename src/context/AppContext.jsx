@@ -1,5 +1,5 @@
 import React, { createContext, useState, useContext, useEffect } from "react";
-import axios from "axios";
+import api from "../services/api";
 import toast from "react-hot-toast";
 
 const AppContext = createContext();
@@ -11,7 +11,7 @@ export const AppProvider = ({ children }) => {
   const [animateCart, setAnimateCart] = useState(false);
   const [animateFav, setAnimateFav] = useState(false);
 
-  // 1. ДЭЛГЭЦ АЧААЛЛАХАД БААЗААС ТАТАХ (Зарагдсан барааг шууд устгах)
+  // 1. ДЭЛГЭЦ АЧААЛЛАХАД БААЗААС ТАТАХ
   const fetchUserItems = async () => {
     const token = localStorage.getItem("token");
     if (!token) {
@@ -21,18 +21,25 @@ export const AppProvider = ({ children }) => {
     }
 
     try {
-      const response = await axios.get("http://127.0.0.1:8000/api/user/items", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await api.get("/user/items");
 
-     // ШИНЭЧИЛСЭН БА БАТТАЙ ЗАСВАР: Баазаас мэдээлэл ямар ч хэлбэрээр ирсэн алдаа гарахгүй уншина
       const validCart = (response.data.cart || [])
-        .map((item) => item.product ? item.product : item)
-        .filter((product) => product !== null && product !== undefined && product.status !== "sold");
+        .map((item) => (item.product ? item.product : item))
+        .filter(
+          (product) =>
+            product !== null &&
+            product !== undefined &&
+            product.status !== "sold",
+        );
 
       const validFavorites = (response.data.favorites || [])
-        .map((item) => item.product ? item.product : item)
-        .filter((product) => product !== null && product !== undefined && product.status !== "sold");
+        .map((item) => (item.product ? item.product : item))
+        .filter(
+          (product) =>
+            product !== null &&
+            product !== undefined &&
+            product.status !== "sold",
+        );
 
       setCart(validCart);
       setFavorites(validFavorites);
@@ -45,7 +52,7 @@ export const AppProvider = ({ children }) => {
     fetchUserItems();
   }, []);
 
-  // 2. САГСАНД НЭМЭХ (Зарагдсан барааг block хийх)
+  // 2. САГСАНД НЭМЭХ
   const addToCart = async (product) => {
     const token = localStorage.getItem("token");
 
@@ -54,7 +61,6 @@ export const AppProvider = ({ children }) => {
       return;
     }
 
-    // ДАВХАР ХАМГААЛАЛТ: Зарагдсан барааг ямар ч тохиолдолд сагсанд нэмэхгүй!
     if (product.status === "sold") {
       toast.error("Уучлаарай, энэ бараа аль хэдийн зарагдсан байна!");
       return;
@@ -67,11 +73,7 @@ export const AppProvider = ({ children }) => {
     }
 
     try {
-      await axios.post(
-        "http://127.0.0.1:8000/api/cart",
-        { product_id: product.id },
-        { headers: { Authorization: `Bearer ${token}` } },
-      );
+      await api.post("/cart", { product_id: product.id });
 
       setCart((prev) => [...prev, product]);
       setAnimateCart(true);
@@ -85,16 +87,8 @@ export const AppProvider = ({ children }) => {
 
   // 3. САГСНААС ХАСАХ
   const removeFromCart = async (productId) => {
-    const token = localStorage.getItem("token");
-    if (!token) return;
-
     try {
-      await axios.post(
-        "http://127.0.0.1:8000/api/cart/remove",
-        { product_id: productId },
-        { headers: { Authorization: `Bearer ${token}` } },
-      );
-
+      await api.post("/cart/remove", { product_id: productId });
       setCart((prev) => prev.filter((item) => item.id !== productId));
       toast.success("Сагснаас хасагдлаа");
     } catch (error) {
@@ -104,27 +98,20 @@ export const AppProvider = ({ children }) => {
 
   // 4. САГС ХООСЛОХ
   const clearCart = async () => {
-    const token = localStorage.getItem("token");
-    if (!token) return;
-
     const itemsToRemove = [...cart];
     setCart([]);
     localStorage.removeItem("cart");
 
     try {
       for (const item of itemsToRemove) {
-        await axios.post(
-          "http://127.0.0.1:8000/api/cart/remove",
-          { product_id: item.id },
-          { headers: { Authorization: `Bearer ${token}` } },
-        );
+        await api.post("/cart/remove", { product_id: item.id });
       }
     } catch (error) {
       console.error("Баазаас сагс хоослоход алдаа гарлаа:", error);
     }
   };
 
-  // 5. ХАДГАЛСАН ЖАГСААЛТАД НЭМЭХ / ХАСАХ (Wishlist)
+  // 5. ХАДГАЛСАН ЖАГСААЛТАД НЭМЭХ / ХАСАХ
   const toggleFavorite = async (product) => {
     const token = localStorage.getItem("token");
 
@@ -133,18 +120,13 @@ export const AppProvider = ({ children }) => {
       return;
     }
 
-    // ХАМГААЛАЛТ: Зарагдсан барааг лайк дарах / хадгалах боломжгүй
     if (product.status === "sold") {
       toast.error("Уучлаарай, зарагдсан барааг хадгалах боломжгүй!");
       return;
     }
 
     try {
-      await axios.post(
-        "http://127.0.0.1:8000/api/favorites/toggle",
-        { product_id: product.id },
-        { headers: { Authorization: `Bearer ${token}` } },
-      );
+      await api.post("/favorites/toggle", { product_id: product.id });
 
       const isExist = favorites.find((f) => f.id === product.id);
       if (isExist) {

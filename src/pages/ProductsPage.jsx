@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import axios from "axios";
+import api from "../services/api";
 import { useAppContext } from "../context/AppContext";
 import toast from "react-hot-toast";
 
@@ -43,8 +43,8 @@ const ProductsPage = () => {
       const fetchProducts = async () => {
         setLoading(true);
         try {
-          const response = await axios.get(
-            "http://127.0.0.1:8000/api/products",
+          const response = await api.get(
+            "/products",
             {
               params: {
                 search: search || null, // ШИНЭ: Backend рүү хайсан үгээ явуулах

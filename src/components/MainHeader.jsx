@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import axios from "axios";
+import api from "../services/api";
 import toast from "react-hot-toast";
 import WishlistPage from "../pages/WishlistPage";
 import CartPage from "../pages/CartPage";
@@ -25,10 +25,9 @@ const MainHeader = () => {
     setIsSubmittingReport(true);
     const token = localStorage.getItem("token");
     try {
-      const res = await axios.post(
-        "http://127.0.0.1:8000/api/reports",
+      const res = await api.post(
+        "/reports",
         reportData,
-        { headers: { Authorization: `Bearer ${token}` } },
       );
       toast.success(res.data.message);
       setIsReportModalOpen(false);
@@ -83,15 +82,13 @@ const MainHeader = () => {
       const fetchCounts = async () => {
         try {
           const token = localStorage.getItem("token");
-          const resNotif = await axios.get(
-            "http://127.0.0.1:8000/api/notifications",
-            { headers: { Authorization: `Bearer ${token}` } },
+          const resNotif = await api.get(
+            "/notifications",
           );
           setNotifications(resNotif.data);
 
-          const resChat = await axios.get(
-            "http://127.0.0.1:8000/api/chat/unread-count",
-            { headers: { Authorization: `Bearer ${token}` } },
+          const resChat = await api.get(
+            "/chat/unread-count",
           );
           setUnreadChatCount(resChat.data.unread);
         } catch (error) {}
@@ -151,8 +148,8 @@ const MainHeader = () => {
     setSearchQuery(value);
     if (value.trim().length > 1) {
       try {
-        const res = await axios.get(
-          `http://127.0.0.1:8000/api/search-suggestions?q=${value}`,
+        const res = await api.get(
+          `/search-suggestions?q=${value}`,
         );
         setSuggestions(res.data);
         setShowSuggestions(true);

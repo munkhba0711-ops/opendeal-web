@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import api from "../../services/api";
 import toast from "react-hot-toast";
 
 const AdminDisputes = () => {
@@ -8,7 +8,7 @@ const AdminDisputes = () => {
   const fetchReports = async () => {
     const token = localStorage.getItem("token");
     try {
-      const res = await axios.get("http://127.0.0.1:8000/api/admin/reports", {
+      const res = await api.get("/admin/reports", {
         headers: { Authorization: `Bearer ${token}` },
       });
       setReports(res.data);
@@ -21,8 +21,8 @@ const AdminDisputes = () => {
 
   const handleResolve = async (id) => {
     try {
-      await axios.post(
-        `http://127.0.0.1:8000/api/admin/reports/${id}/resolve`,
+      await api.post(
+        `/admin/reports/${id}/resolve`,
         {},
         {
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },

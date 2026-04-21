@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import axios from "axios";
+import api from "../services/api";
 
 const HomePage = () => {
   const navigate = useNavigate();
@@ -18,7 +18,7 @@ const HomePage = () => {
   useEffect(() => {
     const fetchRecentProducts = async () => {
       try {
-        const res = await axios.get("http://127.0.0.1:8000/api/products");
+        const res = await api.get("/products");
         const data = res.data.data || res.data;
         setRecentProducts(data.slice(0, 12)); // Гүйлгэж харахын тулд 12 бараа татна
       } catch (error) {
@@ -49,8 +49,8 @@ const HomePage = () => {
 
     if (value.trim().length > 1) {
       try {
-        const res = await axios.get(
-          `http://127.0.0.1:8000/api/search-suggestions?q=${value}`
+        const res = await api.get(
+          `/search-suggestions?q=${value}`
         );
         setSuggestions(res.data);
         setShowSuggestions(true);

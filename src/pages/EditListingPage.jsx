@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import axios from "axios";
+import api from "../services/api";
 import toast from "react-hot-toast";
 
 const EditListingPage = () => {
@@ -39,8 +39,8 @@ const EditListingPage = () => {
   useEffect(() => {
     const fetchProduct = async () => {
       try {
-        const response = await axios.get(
-          `http://127.0.0.1:8000/api/products/${id}`,
+        const response = await api.get(
+          `/products/${id}`,
         );
         const p = response.data.product;
 
@@ -207,12 +207,11 @@ const EditListingPage = () => {
         data.append("specs", JSON.stringify(specsObject));
       }
 
-      const response = await axios.post(
-        `http://127.0.0.1:8000/api/products/${id}`, // _method PUT учраас POST-оор явуулна
+      const response = await api.post(
+        `/products/${id}`, // _method PUT учраас POST-оор явуулна
         data,
         {
           headers: {
-            Authorization: `Bearer ${token}`,
             "Content-Type": "multipart/form-data",
           },
         },

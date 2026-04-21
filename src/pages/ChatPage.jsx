@@ -1,19 +1,24 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import axios from "axios";
+import api from "../services/api";
 import toast from "react-hot-toast";
 
 const ChatPage = () => {
   const navigate = useNavigate();
-  const location = useLocation(); // <--- Үсэрч ирсэн датаг барьж авна
+  const location = useLocation();
   const [conversations, setConversations] = useState([]);
   const [selectedUser, setSelectedUser] = useState(null);
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
   const [showInfo, setShowInfo] = useState(false);
-  const [isEditingChats, setIsEditingChats] = useState(false); // <--- Устгах горим
+  const [isEditingChats, setIsEditingChats] = useState(false);
 
   const messagesEndRef = useRef(null);
+
+  // Сүүлийн мессеж рүү автоматаар гүйлгэх
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
   // Хуудас руу үсэрч орж ирэх үед автоматаар хүн сонгох
   useEffect(() => {
@@ -21,81 +26,70 @@ const ChatPage = () => {
       const userToSelect = location.state.autoSelectUser;
       setSelectedUser(userToSelect);
 
-      // Хэрвээ чатын жагсаалтад байхгүй бол шууд нэмж харуулах
       setConversations((prev) => {
         if (!prev.find((u) => u.id === userToSelect.id)) {
           return [userToSelect, ...prev];
         }
         return prev;
       });
-
-      // Дахин Refresh хийхэд гацахгүйн тулд state-ийг цэвэрлэх
       window.history.replaceState({}, document.title);
     }
   }, [location.state]);
 
+  // Чатын жагсаалт татах
   const fetchConversations = async () => {
     const token = localStorage.getItem("token");
     if (!token) return;
     try {
-      const res = await axios.get(
-        "http://127.0.0.1:8000/api/chat/conversations",
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        },
-      );
-      setConversations(res.data);
-    } catch (error) {}
-  };
-
-  const fetchMessages = async (userId) => {
-    const token = localStorage.getItem("token");
-    if (!token) return;
-    try {
-      const res = await axios.get(
-        `http://127.0.0.1:8000/api/chat/messages/${userId}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        },
-      );
-      setMessages(res.data);
-    } catch (error) {}
+      const res = await api.get("/chat/conversations");
+      setConversations(res.data || []);
+    } catch (error) {
+      console.error("Чат татахад алдаа:", error);
+    }
   };
 
   useEffect(() => {
     fetchConversations();
-    const interval = setInterval(fetchConversations, 30000);
-    return () => clearInterval(interval);
   }, []);
 
+  // Сонгосон хүний мессежүүдийг татах
   useEffect(() => {
-    if (selectedUser) {
-      fetchMessages(selectedUser.id);
-      const interval = setInterval(() => {
-        fetchMessages(selectedUser.id);
-      }, 3000);
-      return () => clearInterval(interval);
-    }
+    if (!selectedUser) return;
+    const fetchMessages = async () => {
+      try {
+        const res = await api.get(`/chat/messages/${selectedUser.id}`);
+        setMessages(res.data || []);
+      } catch (error) {
+        console.error("Мессеж татахад алдаа:", error);
+      }
+    };
+
+    fetchMessages();
+    const interval = setInterval(fetchMessages, 3000);
+    return () => clearInterval(interval);
   }, [selectedUser]);
 
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
-
+  // Мессеж илгээх
   const handleSendMessage = async (e) => {
     e.preventDefault();
     if (!newMessage.trim() || !selectedUser) return;
 
-    const token = localStorage.getItem("token");
     try {
-      const res = await axios.post(
-        "http://127.0.0.1:8000/api/chat/send",
-        { receiver_id: selectedUser.id, message: newMessage },
-        { headers: { Authorization: `Bearer ${token}` } },
-      );
-
-      setMessages([...messages, res.data]);
+      const res = await api.post("/chat/send", {
+        receiver_id: selectedUser.id,
+        message: newMessage,
+      });
       setNewMessage("");
+      // Шинэ мессежийг дэлгэцэнд шууд нэмж харуулах
+      setMessages((prev) => [
+        ...prev,
+        res.data.message || {
+          id: Date.now(),
+          message: newMessage,
+          sender_id: "me",
+          created_at: new Date(),
+        },
+      ]);
       fetchConversations();
     } catch (error) {
       toast.error("Мессеж илгээхэд алдаа гарлаа");
@@ -104,81 +98,68 @@ const ChatPage = () => {
 
   // === ЧАТ УСТГАХ ===
   const handleDeleteChat = async (userId, e) => {
-    e.stopPropagation(); // Дээшээ click дамжихыг зогсоох
+    e.stopPropagation();
     if (!window.confirm("Энэ хүнтэй хийсэн чатыг бүр мөсөн устгах уу?")) return;
 
-    const token = localStorage.getItem("token");
     try {
-      await axios.delete(
-        `http://127.0.0.1:8000/api/chat/conversations/${userId}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        },
-      );
-
-      setConversations((prev) => prev.filter((u) => u.id !== userId));
+      await api.delete(`/chat/conversations/${userId}`);
+      setConversations((prev) => prev.filter((c) => c.id !== userId));
       if (selectedUser?.id === userId) {
         setSelectedUser(null);
       }
       toast.success("Чат устгагдлаа");
-    } catch (err) {
-      toast.error("Устгахад алдаа гарлаа");
+    } catch (error) {
+      toast.error("Устгах үед алдаа гарлаа");
     }
   };
 
+  // Цаг форматыг засах
   const formatTime = (dateString) => {
-    return new Date(dateString).toLocaleTimeString([], {
+    if (!dateString) return "";
+    const date = new Date(dateString);
+    return date.toLocaleTimeString("mn-MN", {
       hour: "2-digit",
       minute: "2-digit",
     });
   };
 
   return (
-    <div className="flex-1 flex overflow-hidden border-t border-gray-200 dark:border-gray-800">
-      {/* ЗҮҮН ТАЛ: ЧАТЫН ЖАГСААЛТ */}
-      <aside className="w-24 md:w-80 flex flex-col border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-background-dark overflow-hidden shrink-0 transition-all">
-        <div className="p-4 space-y-4 hidden md:block border-b border-gray-100 dark:border-gray-800">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-bold text-slate-900 dark:text-white">
-              Чатууд
-            </h2>
-
-            {/* === ЗАСАХ / УСТГАХ ГАРГАЖ ИРЭХ ТОВЧ === */}
-            <button
-              onClick={() => setIsEditingChats(!isEditingChats)}
-              className={`p-2 rounded-full transition-colors ${isEditingChats ? "text-red-500 bg-red-50 dark:bg-red-500/10" : "text-slate-400 hover:text-primary hover:bg-primary/10"}`}
-              title="Чатуудыг засах"
-            >
-              <span className="material-symbols-outlined text-[20px]">
-                {isEditingChats ? "close" : "edit_square"}
-              </span>
-            </button>
-          </div>
+    <div className="flex h-[calc(100vh-64px)] overflow-hidden">
+      {/* ЗҮҮН ТАЛ: ЧАТНЫ ЖАГСААЛТ */}
+      <aside className="w-full md:w-80 lg:w-96 flex flex-col border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-background-dark shrink-0 transition-all">
+        <div className="p-4 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center bg-slate-50 dark:bg-surface-dark/50">
+          <h2 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">
+            Зурвасууд
+          </h2>
+          <button
+            onClick={() => setIsEditingChats(!isEditingChats)}
+            className="p-2 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors text-slate-500"
+          >
+            <span className="material-symbols-outlined text-[20px]">
+              {isEditingChats ? "done" : "edit"}
+            </span>
+          </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-2 py-2 space-y-1">
+        <div className="flex-1 overflow-y-auto p-3 space-y-2">
           {conversations.length === 0 ? (
-            <p className="text-center text-xs text-gray-400 mt-4">
-              Одоогоор чат байхгүй байна.
-            </p>
+            <div className="text-center text-slate-500 py-10 text-sm">
+              Одоогоор чат алга байна
+            </div>
           ) : (
             conversations.map((user) => (
               <div
                 key={user.id}
-                onClick={() => {
-                  setSelectedUser(user);
-                  setShowInfo(false);
-                  user.unread_count = 0;
-                }}
-                className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-colors ${
+                onClick={() => setSelectedUser(user)}
+                className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all border ${
                   selectedUser?.id === user.id
-                    ? "bg-primary/10 dark:bg-primary/20"
-                    : "hover:bg-slate-50 dark:hover:bg-slate-800/50"
+                    ? "bg-primary/10 border-primary/20"
+                    : "bg-white dark:bg-surface-dark border-transparent hover:bg-slate-50 dark:hover:bg-slate-800"
                 }`}
               >
                 <div className="relative shrink-0">
                   <div
-                    className="h-12 w-12 rounded-full bg-cover bg-center border border-gray-200 dark:border-gray-700"
+                    className="h-12 w-12 rounded-full bg-cover bg-center border border-slate-200 dark:border-slate-700"
                     style={{
                       backgroundImage: `url('${user.avatar || "https://via.placeholder.com/100?text=User"}')`,
                     }}
@@ -186,12 +167,15 @@ const ChatPage = () => {
                 </div>
                 <div className="flex-1 min-w-0 hidden md:flex items-center justify-between">
                   <h3
-                    className={`text-sm truncate ${user.unread_count > 0 || selectedUser?.id === user.id ? "font-bold text-primary" : "font-semibold text-slate-700 dark:text-slate-200"}`}
+                    className={`text-sm truncate ${
+                      user.unread_count > 0 || selectedUser?.id === user.id
+                        ? "font-bold text-primary"
+                        : "font-semibold text-slate-700 dark:text-slate-200"
+                    }`}
                   >
                     {user.name || "Хэрэглэгч"}
                   </h3>
 
-                  {/* === УСТГАХ ТОВЧ (EDIT МОД ҮЕД) === */}
                   {isEditingChats ? (
                     <button
                       onClick={(e) => handleDeleteChat(user.id, e)}
@@ -272,19 +256,22 @@ const ChatPage = () => {
                           className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 mb-1 flex items-center gap-3 w-64 shadow-sm cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
                         >
                           <img
-                            src={msg.product.img}
-                            alt={msg.product.title}
+                            src={
+                              msg.product?.img ||
+                              "https://via.placeholder.com/150"
+                            }
+                            alt={msg.product?.title || "Product"}
                             className="w-12 h-12 rounded-lg object-cover border border-slate-100 dark:border-slate-700"
                           />
                           <div className="flex flex-col flex-1 overflow-hidden">
                             <span className="text-[10px] text-slate-500 truncate uppercase tracking-wider">
-                              {msg.product.category_name}
+                              {msg.product?.category_name || "Бараа"}
                             </span>
                             <span className="font-bold text-slate-900 dark:text-white text-sm truncate">
-                              {msg.product.title}
+                              {msg.product?.title}
                             </span>
                             <span className="text-primary font-bold text-xs">
-                              {msg.product.price}
+                              {msg.product?.price}
                             </span>
                           </div>
                         </div>

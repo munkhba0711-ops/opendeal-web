@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useRef } from "react";
+﻿import React, { useState, useEffect, useRef } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import axios from "axios";
+import api from "../services/api";
 import toast from "react-hot-toast";
 import { useAppContext } from "../context/AppContext";
 
@@ -39,9 +39,7 @@ const ProductDetailPage = () => {
     const fetchProduct = async () => {
       setLoading(true);
       try {
-        const response = await axios.get(
-          `http://127.0.0.1:8000/api/products/${id}`,
-        );
+        const response = await api.get(`/products/${id}`);
 
         const prodData = response.data.product;
         setProduct(prodData);
@@ -137,14 +135,8 @@ const ProductDetailPage = () => {
               onClick={async () => {
                 toast.dismiss(t.id);
                 const loadingToast = toast.loading("Устгаж байна...");
-                const token = localStorage.getItem("token");
                 try {
-                  await axios.delete(
-                    `http://127.0.0.1:8000/api/products/${product.id}`,
-                    {
-                      headers: { Authorization: `Bearer ${token}` },
-                    },
-                  );
+                  await api.delete(`/products/${product.id}`);
                   toast.success("Бараа амжилттай устгагдлаа!", {
                     id: loadingToast,
                   });
@@ -175,14 +167,10 @@ const ProductDetailPage = () => {
   // === ШИНЭ: БАТАЛГААЖУУЛАЛТЫН ХҮСЭЛТ ЖИНХЭНЭЭР ИЛГЭЭХ ===
   const handleVerificationSubmit = async () => {
     setIsVerifying(true);
-    const token = localStorage.getItem("token");
-
     try {
-      const response = await axios.post(
-        "http://127.0.0.1:8000/api/verification-requests",
-        { product_id: product.id },
-        { headers: { Authorization: `Bearer ${token}` } },
-      );
+      const response = await api.post("/verification-requests", {
+        product_id: product.id,
+      });
       toast.success(response.data.message, { duration: 4000 });
       setIsVerifyModalOpen(false);
     } catch (error) {
@@ -196,8 +184,6 @@ const ProductDetailPage = () => {
 
   const handleOfferSubmit = async (e) => {
     e.preventDefault();
-    const token = localStorage.getItem("token");
-
     if (!offeredPrice || isNaN(offeredPrice) || Number(offeredPrice) <= 0) {
       toast.error("Зөв үнийн дүн оруулна уу!");
       return;
@@ -205,11 +191,10 @@ const ProductDetailPage = () => {
 
     setIsSubmitting(true);
     try {
-      const response = await axios.post(
-        "http://127.0.0.1:8000/api/purchase-requests",
-        { product_id: product.id, offered_price: offeredPrice },
-        { headers: { Authorization: `Bearer ${token}` } },
-      );
+      const response = await api.post("/purchase-requests", {
+        product_id: product.id,
+        offered_price: offeredPrice,
+      });
       toast.success(response.data.message, {
         style: {
           borderRadius: "10px",
@@ -239,19 +224,13 @@ const ProductDetailPage = () => {
       return;
     }
 
-    const token = localStorage.getItem("token");
-
     // 1. Арын фононд мессежээ илгээх (Хүлээх шаардлагагүй!)
-    axios
-      .post(
-        "http://127.0.0.1:8000/api/chat/send",
-        {
-          receiver_id: product.user_id,
-          message: `Сайн байна уу? "${product.title}" барааны талаар сонирхож байна.`,
-          product_id: product.id,
-        },
-        { headers: { Authorization: `Bearer ${token}` } },
-      )
+    api
+      .post("/chat/send", {
+        receiver_id: product.user_id,
+        message: `Сайн байна уу? "${product.title}" барааны талаар сонирхож байна.`,
+        product_id: product.id,
+      })
       .catch(() => {});
 
     // 2. Шууд 0 секундэд Чат хуудас руу үсрэх ба хэнтэй чатлахаа автоматаар сонгох

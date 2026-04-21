@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import axios from "axios";
+import api from "../services/api";
 import toast from "react-hot-toast";
 
 const AddListingPage = () => {
@@ -127,12 +127,11 @@ const AddListingPage = () => {
         data.append("specs", JSON.stringify(specsObject));
       }
 
-      const response = await axios.post(
-        "http://127.0.0.1:8000/api/products",
+      const response = await api.post(
+        "/products",
         data,
         {
           headers: {
-            Authorization: `Bearer ${token}`,
             "Content-Type": "multipart/form-data",
           },
         },

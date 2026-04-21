@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import axios from "axios"; // Хадгалах үйлдэл хийхэд axios хэрэгтэй
+import api from "../services/api";
 import toast from "react-hot-toast"; // Энийг нэмнэ
 
 const EditProfilePage = () => {
@@ -33,10 +33,9 @@ const EditProfilePage = () => {
     if (!token) return;
 
     try {
-      const response = await axios.post(
-        "http://127.0.0.1:8000/api/profile/update",
+      const response = await api.post(
+        "/profile/update",
         { name, phone, city, district, address },
-        { headers: { Authorization: `Bearer ${token}` } },
       );
 
       // Амжилттай хадгалсан бол LocalStorage дахь user мэдээллийг шинэчлэх
@@ -69,10 +68,9 @@ const EditProfilePage = () => {
     if (!token) return;
 
     try {
-      const response = await axios.post(
-        "http://127.0.0.1:8000/api/profile/change-password",
+      const response = await api.post(
+        "/profile/change-password",
         passwords,
-        { headers: { Authorization: `Bearer ${token}` } },
       );
 
       toast.success("Нууц үг амжилттай солигдлоо!", {
@@ -109,10 +107,9 @@ const EditProfilePage = () => {
     if (!token) return;
 
     try {
-      const response = await axios.post(
-        "http://127.0.0.1:8000/api/email/verification-notification",
+      const response = await api.post(
+        "/email/verification-notification",
         {},
-        { headers: { Authorization: `Bearer ${token}` } },
       );
 
       toast.success(response.data.message, {

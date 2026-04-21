@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate, useLocation, Link } from "react-router-dom";
 import toast from "react-hot-toast";
-import axios from "axios";
+import api from "../services/api";
 import { useAppContext } from "../context/AppContext";
 
 const PaymentPage = () => {
@@ -74,25 +74,22 @@ const PaymentPage = () => {
         const orderIds = location.state?.orderIds || [];
 
         if (orderIds.length > 0) {
-          await axios.post(
-            `http://127.0.0.1:8000/api/cart/pay-orders`,
+          await api.post(
+            `/cart/pay-orders`,
             { order_ids: orderIds },
-            { headers: { Authorization: `Bearer ${token}` } },
           );
         } else {
-          await axios.post(
-            `http://127.0.0.1:8000/api/cart/pay-all`,
+          await api.post(
+            `/cart/pay-all`,
             { items: orderItems },
-            { headers: { Authorization: `Bearer ${token}` } },
           );
         }
         clearCart();
       } else {
         const actualOrderId = String(orderId).replace("ORDER_", "");
-        await axios.post(
-          `http://127.0.0.1:8000/api/orders/pay/${actualOrderId}`,
+        await api.post(
+          `/orders/pay/${actualOrderId}`,
           {},
-          { headers: { Authorization: `Bearer ${token}` } },
         );
       }
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import api from "../../services/api";
 import toast from "react-hot-toast";
 
 const AdminSettings = () => {
@@ -9,9 +9,8 @@ const AdminSettings = () => {
   const fetchCategories = async () => {
     const token = localStorage.getItem("token");
     try {
-      const res = await axios.get(
-        "http://127.0.0.1:8000/api/admin/categories",
-        { headers: { Authorization: `Bearer ${token}` } },
+      const res = await api.get(
+        "/admin/categories",
       );
       setCategories(res.data);
     } catch (e) {}
@@ -25,8 +24,8 @@ const AdminSettings = () => {
     e.preventDefault();
     if (!newCategory.trim()) return;
     try {
-      await axios.post(
-        "http://127.0.0.1:8000/api/admin/categories",
+      await api.post(
+        "/admin/categories",
         { name: newCategory },
         {
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
@@ -69,11 +68,10 @@ const AdminSettings = () => {
                 toast.dismiss(t.id);
                 const loadingToast = toast.loading("Устгаж байна...");
                 try {
-                  await axios.delete(
-                    `http://127.0.0.1:8000/api/admin/categories/${id}`,
+                  await api.delete(
+                    `/admin/categories/${id}`,
                     {
                       headers: {
-                        Authorization: `Bearer ${localStorage.getItem("token")}`,
                       },
                     },
                   );

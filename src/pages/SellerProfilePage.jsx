@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
-import axios from "axios";
+import api from "../services/api";
 import toast from "react-hot-toast";
 
 const SellerProfilePage = () => {
@@ -23,9 +23,7 @@ const SellerProfilePage = () => {
   const fetchSeller = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(
-        `http://127.0.0.1:8000/api/seller-profile/${id}`,
-      );
+      const response = await api.get(`/seller-profile/${id}`);
       setSellerData(response.data);
     } catch (error) {
       toast.error("Худалдагчийн мэдээлэл олдсонгүй");
@@ -51,15 +49,11 @@ const SellerProfilePage = () => {
     const token = localStorage.getItem("token");
 
     try {
-      const res = await axios.post(
-        "http://127.0.0.1:8000/api/submit-review",
-        {
-          seller_id: id,
-          rating: rating,
-          comment: comment,
-        },
-        { headers: { Authorization: `Bearer ${token}` } },
-      );
+      const res = await api.post("/submit-review", {
+        seller_id: id,
+        rating: rating,
+        comment: comment,
+      });
 
       toast.success(res.data.message);
       setIsReviewModalOpen(false);
@@ -87,12 +81,11 @@ const SellerProfilePage = () => {
 
     const token = localStorage.getItem("token");
 
-    axios
-      .post(
-        "http://127.0.0.1:8000/api/chat/send",
-        { receiver_id: sellerData.seller.id, message: "Сайн байна уу?" },
-        { headers: { Authorization: `Bearer ${token}` } },
-      )
+    api
+      .post("/chat/send", {
+        receiver_id: sellerData.seller.id,
+        message: "Сайн байна уу?",
+      })
       .catch(() => {});
 
     navigate("/chat", { state: { autoSelectUser: sellerData.seller } });
