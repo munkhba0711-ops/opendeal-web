@@ -45,7 +45,7 @@ const ProfilePage = () => {
   const formatDate = (dateString) =>
     new Date(dateString).toLocaleDateString("mn-MN");
 
-  // 2. БААЗААС МЭДЭЭЛЭЛ ТАТАХ (Алдааг засаж гадна нь гаргасан хэлбэр)
+  // 2. БААЗААС МЭДЭЭЛЭЛ ТАТАХ (Tracker алга болдог алдааг зассан)
   const fetchProfileData = async () => {
     const token = localStorage.getItem("token");
     if (!token) {
@@ -57,19 +57,29 @@ const ProfilePage = () => {
       const response = await api.get("/profile/data");
 
       const allOrders = response.data.activeOrders || [];
+      const pastOrders = response.data.pastPurchases || []; // Төлөгдсөн бараанууд энд ирдэг
+
       setPendingOrders(
         allOrders.filter(
           (o) => o.status === "pending" && o.product?.status !== "sold",
         ),
       );
-      // Хянах самбар руу: зөвхөн амжилттай төлөгдсөн, хүргэлтийн барааг хийнэ
+
+      // === ЗАСВАР: Tracker-т зориулж идэвхтэй болон түүх хоёулангаас нь хайна ===
+      const combinedOrders = [...allOrders, ...pastOrders];
+      // Давхардаж харагдахаас сэргийлж ID-гаар нь цэвэрлэх
+      const uniqueOrders = Array.from(
+        new Map(combinedOrders.map((item) => [item.id, item])).values(),
+      );
+
+      // Хянах самбар руу: төлөгдсөн, хүргэлтэнд гарсан, хүргэгдсэн бараануудыг шүүж хийнэ
       setActiveOrders(
-        allOrders.filter((o) =>
+        uniqueOrders.filter((o) =>
           ["paid", "shipping", "delivered"].includes(o.status),
         ),
       );
 
-      setPastPurchases(response.data.pastPurchases || []);
+      setPastPurchases(pastOrders);
       setPurchaseRequests(response.data.purchaseRequests || []);
       setIncomingRequests(response.data.incomingRequests || []);
       setActiveProducts(response.data.activeProducts || []);
