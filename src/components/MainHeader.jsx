@@ -25,10 +25,7 @@ const MainHeader = () => {
     setIsSubmittingReport(true);
     const token = localStorage.getItem("token");
     try {
-      const res = await api.post(
-        "/reports",
-        reportData,
-      );
+      const res = await api.post("/reports", reportData);
       toast.success(res.data.message);
       setIsReportModalOpen(false);
       setReportData({ email: "", reason: "" });
@@ -64,34 +61,21 @@ const MainHeader = () => {
   };
 
   useEffect(() => {
-    if (
-      localStorage.getItem("color-theme") === "dark" ||
-      (!("color-theme" in localStorage) &&
-        window.matchMedia("(prefers-color-scheme: dark)").matches)
-    ) {
-      document.documentElement.classList.add("dark");
-      setIsDarkMode(true);
-    } else {
-      document.documentElement.classList.remove("dark");
-      setIsDarkMode(false);
-    }
-  }, []);
-
-  useEffect(() => {
     if (user) {
       const fetchCounts = async () => {
-        try {
-          const token = localStorage.getItem("token");
-          const resNotif = await api.get(
-            "/notifications",
-          );
-          setNotifications(resNotif.data);
+        const token = localStorage.getItem("token");
+        // ШИНЭ НЭМСЭН ХАМГААЛАЛТ: Token байхгүй буюу нэвтрээгүй үед бааз руу хандаж 401 алдаа гаргахгүй
+        if (!token) return;
 
-          const resChat = await api.get(
-            "/chat/unread-count",
-          );
-          setUnreadChatCount(resChat.data.unread);
-        } catch (error) {}
+        try {
+          const resNotif = await api.get("/notifications");
+          setNotifications(resNotif.data || []);
+
+          const resChat = await api.get("/chat/unread-count");
+          setUnreadChatCount(resChat.data?.unread || 0);
+        } catch (error) {
+          console.error("Мэдээлэл шалгахад алдаа гарлаа:", error);
+        }
       };
       fetchCounts();
       const interval = setInterval(fetchCounts, 3000);
@@ -148,9 +132,7 @@ const MainHeader = () => {
     setSearchQuery(value);
     if (value.trim().length > 1) {
       try {
-        const res = await api.get(
-          `/search-suggestions?q=${value}`,
-        );
+        const res = await api.get(`/search-suggestions?q=${value}`);
         setSuggestions(res.data);
         setShowSuggestions(true);
       } catch (error) {}
