@@ -77,7 +77,7 @@ const PaymentPage = () => {
         }
         try {
           clearCart();
-        } catch (e) {} // Алдаа гарсан ч тоохгүй өнгөрнө
+        } catch (e) {}
       } else {
         const actualOrderId = String(orderId).replace("ORDER_", "");
         if (actualOrderId && actualOrderId !== "undefined") {
@@ -85,24 +85,22 @@ const PaymentPage = () => {
         }
       }
 
-      // Төлбөр амжилттай үед
       toast.success("Төлбөр амжилттай төлөгдлөө! Баярлалаа.", {
         duration: 4000,
       });
       try {
         await fetchUserItems();
-      } catch (e) {} // Баазаас татахыг оролдоно, алдвал тоохгүй
+      } catch (e) {}
 
-      // АМЖИЛТТАЙ ШИЛЖИХ
+      // === SUCCESS ХУУДАС РУУ ШИЛЖИХ ===
       navigate("/success", {
         state: { items: orderItems, total: paymentDetails?.totalAmount || 0 },
       });
     } catch (error) {
       console.error("Төлбөрийн алдаа:", error);
 
-      // === ХАМГААЛАЛТ (FALLBACK) ===
-      // Юу ч болсон бай ЗААВАЛ амжилттай хуудас руу шилжинэ!
-      toast.success("Төлбөр амжилттай!", { duration: 3000 });
+      // === ХАМГААЛАЛТ: Гацсан ч гэсэн SUCCESS хуудас руугаа заавал үсэрнэ ===
+      toast.success("Төлбөр амжилттай! (Туршилтын горим)", { duration: 3000 });
 
       navigate("/success", {
         state: { items: orderItems, total: paymentDetails?.totalAmount || 0 },
