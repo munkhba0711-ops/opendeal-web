@@ -43,20 +43,17 @@ const ProductsPage = () => {
       const fetchProducts = async () => {
         setLoading(true);
         try {
-          const response = await api.get(
-            "/products",
-            {
-              params: {
-                search: search || null, // ШИНЭ: Backend рүү хайсан үгээ явуулах
-                category: category || null,
-                sort: sortBy,
-                conditions: conditions.length > 0 ? conditions.join(",") : null,
-                min_price: priceRange.min,
-                max_price: priceRange.max,
-                page: page,
-              },
+          const response = await api.get("/products", {
+            params: {
+              search: search || null, // ШИНЭ: Backend рүү хайсан үгээ явуулах
+              category: category || null,
+              sort: sortBy,
+              conditions: conditions.length > 0 ? conditions.join(",") : null,
+              min_price: priceRange.min,
+              max_price: priceRange.max,
+              page: page,
             },
-          );
+          });
 
           // ШИНЭЧИЛСЭН: Laravel paginate нь мэдээллээ data дотор, нийт хуудсыг last_page дотор явуулдаг
           const incomingData = response.data.data || response.data;
@@ -365,7 +362,8 @@ const ProductsPage = () => {
                       </span>
                     </button>
 
-                    {product.isVerified === 1 && (
+                    {/* ШИНЭЧИЛСЭН: 1, "1" эсвэл true ямар ч хэлбэрээр ирсэн баталгаажсан гэж үзнэ */}
+                    {product.isVerified || product.is_verified ? (
                       <div className="absolute bottom-3 left-3">
                         <span className="px-2.5 py-1 text-[10px] font-bold bg-white/90 dark:bg-surface-dark/90 text-emerald-600 rounded-md flex items-center gap-1 shadow-sm border border-emerald-100/50 dark:border-emerald-900/50">
                           <span className="material-symbols-outlined text-sm">
@@ -374,7 +372,7 @@ const ProductsPage = () => {
                           Баталгаажсан
                         </span>
                       </div>
-                    )}
+                    ) : null}
                   </div>
 
                   <div className="p-4 flex flex-col flex-1 gap-2">
