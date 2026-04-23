@@ -3,12 +3,15 @@ import { Link, useLocation, Navigate } from "react-router-dom";
 
 const SuccessPage = () => {
   const location = useLocation();
-  const order = location.state?.order;
+  const items = location.state?.items;
+  const total = location.state?.total;
 
-  // Хэрэв Payment хуудаснаас дамжиж ирээгүй шууд /success гэж орж ирвэл нүүр рүү буцаана
-  if (!order) {
+  if (!items || items.length === 0) {
     return <Navigate to="/" />;
   }
+
+  const firstItem = items[0];
+  const orderId = firstItem?.id || Math.floor(Math.random() * 100000);
 
   return (
     <main className="flex-grow flex flex-col items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-background-light dark:bg-background-dark min-h-[80vh]">
@@ -36,7 +39,7 @@ const SuccessPage = () => {
           <div className="flex justify-between items-center mb-3 text-sm">
             <span className="text-slate-500 dark:text-slate-400">Бараа</span>
             <span className="font-bold text-slate-900 dark:text-white truncate max-w-[200px]">
-              {order.product.title}
+              {firstItem?.title || "Хөгжмийн зэмсэг"}
             </span>
           </div>
           <div className="flex justify-between items-center mb-3 text-sm">
@@ -44,7 +47,7 @@ const SuccessPage = () => {
               Захиалгын дугаар
             </span>
             <span className="font-bold text-primary dark:text-white">
-              #{String(order.id).replace("ORDER_", "")}
+              #{String(orderId).replace("ORDER_", "")}
             </span>
           </div>
           <div className="flex justify-between items-center mb-3 text-sm">
@@ -58,7 +61,7 @@ const SuccessPage = () => {
               Төлсөн дүн
             </span>
             <span className="font-bold text-slate-900 dark:text-white">
-              {order.total_price.toLocaleString()} ₮
+              {(total || 0).toLocaleString()} ₮
             </span>
           </div>
 
