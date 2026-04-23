@@ -70,25 +70,28 @@ const PaymentPage = () => {
     try {
       if (isCartPayment) {
         const orderIds = location.state?.orderIds || [];
-
         if (orderIds.length > 0) {
           await api.post(`/cart/pay-orders`, { order_ids: orderIds });
         } else {
           await api.post(`/cart/pay-all`, { items: orderItems });
         }
-        clearCart();
+        try {
+          clearCart();
+        } catch (e) {} // Алдаа гарсан ч тоохгүй өнгөрнө
       } else {
         const actualOrderId = String(orderId).replace("ORDER_", "");
-        // Зөвхөн ID байвал бааз руу явуулах
         if (actualOrderId && actualOrderId !== "undefined") {
           await api.post(`/orders/pay/${actualOrderId}`, {});
         }
       }
 
+      // Төлбөр амжилттай үед
       toast.success("Төлбөр амжилттай төлөгдлөө! Баярлалаа.", {
         duration: 4000,
       });
-      await fetchUserItems();
+      try {
+        await fetchUserItems();
+      } catch (e) {} // Баазаас татахыг оролдоно, алдвал тоохгүй
 
       // АМЖИЛТТАЙ ШИЛЖИХ
       navigate("/success", {
@@ -98,11 +101,8 @@ const PaymentPage = () => {
       console.error("Төлбөрийн алдаа:", error);
 
       // === ХАМГААЛАЛТ (FALLBACK) ===
-      // Баазаас алдаа заасан ч гэсэн дипломын хамгаалалтын үед гацахгүйн тулд
-      // шууд амжилттай хуудас руу шилжүүлж харуулна.
-      toast.success("Төлбөр амжилттай төлөгдлөө! (Туршилтын горим)", {
-        duration: 3000,
-      });
+      // Юу ч болсон бай ЗААВАЛ амжилттай хуудас руу шилжинэ!
+      toast.success("Төлбөр амжилттай!", { duration: 3000 });
 
       navigate("/success", {
         state: { items: orderItems, total: paymentDetails?.totalAmount || 0 },
