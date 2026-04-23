@@ -448,7 +448,7 @@ const ProfilePage = () => {
                   </div>
                 </div>
                 <Link
-                  to={`/product-detail/${order.product?.id || order.product_id}`}
+                  to={`/order-detail/${order.id}`}
                   className="px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-lg text-sm font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
                 >
                   Дэлгэрэнгүй
@@ -652,8 +652,7 @@ const ProfilePage = () => {
                 {pastPurchases.map((item) => (
                   <Link
                     key={item.id}
-                    // ШИНЭ: Барааны дэлгэрэнгүй рүү шилжих
-                    to={`/product-detail/${item.product?.id || item.product_id}`}
+                    to={`/order-detail/${item.id}`}
                     className="group bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-lg transition-all flex flex-col"
                   >
                     <div className="relative aspect-[4/3] bg-slate-100 dark:bg-slate-900 overflow-hidden w-full">

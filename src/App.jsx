@@ -85,7 +85,7 @@ function App() {
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/payment/:orderId" element={<PaymentPage />} />
-            <Route path="/order-detail" element={<OrderDetailPage />} />
+            <Route path="/order-detail/:id" element={<OrderDetailPage />} />
             <Route path="/add-listing" element={<AddListingPage />} />
             <Route path="/edit-listing/:id" element={<EditListingPage />} />
             <Route path="/seller-profile/:id" element={<SellerProfilePage />} />

@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import api from "../services/api";
-import toast from "react-hot-toast";
 
 const OrderDetailPage = () => {
   const { id } = useParams();
@@ -12,20 +11,31 @@ const OrderDetailPage = () => {
   useEffect(() => {
     const fetchOrderDetails = async () => {
       try {
-        // Захиалгын ID-аар баазаас дата татах
-        const response = await api.get(`/orders/${id}`);
-        setOrder(response.data.order || response.data);
+        // === ШИЙДЭЛ: Баазад шинэ API бичихгүйгээр Profile дата дотроос шүүж олно ===
+        const response = await api.get("/profile/data");
+        const allOrders = response.data?.activeOrders || [];
+        const pastOrders = response.data?.pastPurchases || [];
+
+        // Идэвхтэй болон Түүхэн захиалгуудыг нэгтгээд хайх
+        const combinedOrders = [...allOrders, ...pastOrders];
+        const foundOrder = combinedOrders.find(
+          (o) => String(o.id) === String(id),
+        );
+
+        if (foundOrder) {
+          setOrder(foundOrder);
+        } else {
+          throw new Error("Захиалга олдсонгүй");
+        }
       } catch (error) {
         console.error("Захиалгын мэдээлэл олдсонгүй:", error);
-        toast.error("Захиалгын мэдээлэл олдсонгүй.");
-        navigate("/profile");
       } finally {
         setLoading(false);
       }
     };
 
     if (id) fetchOrderDetails();
-  }, [id, navigate]);
+  }, [id]);
 
   if (loading) {
     return (
@@ -35,15 +45,57 @@ const OrderDetailPage = () => {
     );
   }
 
-  if (!order) return null;
+  // Хэрэв дата олдсонгүй бол цагаан дэлгэц гаргахгүй, буцах товч харуулна
+  if (!order) {
+    return (
+      <div className="flex-1 flex flex-col justify-center items-center py-20 text-slate-500 gap-4">
+        <span className="material-symbols-outlined text-5xl opacity-30">
+          error
+        </span>
+        <p>Захиалгын мэдээлэл олдсонгүй эсвэл устгагдсан байна.</p>
+        <button
+          onClick={() => navigate("/profile")}
+          className="px-6 py-2 bg-primary text-white rounded-lg font-bold hover:bg-primary-dark"
+        >
+          Профайл руу буцах
+        </button>
+      </div>
+    );
+  }
 
-  // Төлөвүүдийн логик
+  // === АЛДАА ГАРГАХГҮЙН ТУЛД БҮХ ӨГӨГДЛИЙГ ШАЛГАХ (SAFE VARIABLES) ===
   const statusSteps = ["pending", "paid", "shipping", "delivered"];
-  const currentStepIndex = statusSteps.indexOf(order.status);
+  const currentStepIndex = statusSteps.indexOf(order.status || "pending");
   const isDelivered = order.status === "delivered";
 
-  // Огноо форматлах
-  const orderDate = new Date(order.created_at).toLocaleDateString("mn-MN");
+  // 1. Огноог гацахгүйгээр хөрвүүлэх
+  let orderDate = "Огноо тодорхойгүй";
+  if (order.created_at) {
+    try {
+      orderDate = new Date(order.created_at).toLocaleDateString("mn-MN");
+    } catch (e) {}
+  }
+
+  // 2. Хүргэлтийн хаягийг аюулгүйгээр задлах (JSON string ирсэн ч гацахгүй)
+  let shippingInfo = {};
+  if (typeof order.shipping_info === "string") {
+    try {
+      shippingInfo = JSON.parse(order.shipping_info);
+    } catch (e) {}
+  } else if (order.shipping_info) {
+    shippingInfo = order.shipping_info;
+  }
+
+  // 3. Үнийн дүнгийн аюулгүй тооцоолол
+  const totalAmount = Number(
+    order.total_amount || order.total_price || order.product?.price || 0,
+  );
+  const productPrice = Number(order.product?.price || 0);
+  const shippingFee = Number(shippingInfo.fee || 15000);
+  const subTotal =
+    totalAmount > 0 && totalAmount > shippingFee
+      ? totalAmount - shippingFee
+      : productPrice;
 
   return (
     <main className="flex-1 flex justify-center py-8 px-4 md:px-10">
@@ -82,8 +134,8 @@ const OrderDetailPage = () => {
         </div>
 
         {/* Progress Stepper */}
-        <div className="bg-white dark:bg-surface-dark p-8 rounded-xl border border-gray-200 dark:border-gray-800">
-          <div className="relative flex justify-between">
+        <div className="bg-white dark:bg-surface-dark p-8 rounded-xl border border-gray-200 dark:border-gray-800 overflow-x-auto">
+          <div className="relative flex justify-between min-w-[400px]">
             <div className="absolute top-5 left-0 w-full h-1 bg-slate-100 dark:bg-slate-800 -z-0">
               <div
                 className="h-full bg-primary rounded-full transition-all duration-500"
@@ -154,7 +206,6 @@ const OrderDetailPage = () => {
                 <h3 className="font-bold text-slate-900 dark:text-white">
                   Захиалсан бараа
                 </h3>
-                {/* ХУДАЛДАГЧ РУУ ҮСРЭХ ЛИНК */}
                 {order.product?.user_id && (
                   <Link
                     to={`/seller-profile/${order.product.user_id}`}
@@ -179,19 +230,13 @@ const OrderDetailPage = () => {
                 </div>
                 <div className="flex-1 min-w-0">
                   <Link
-                    to={`/product-detail/${order.product?.id}`}
+                    to={`/product-detail/${order.product?.id || order.product_id}`}
                     className="text-sm font-semibold text-slate-900 dark:text-white hover:text-primary transition-colors line-clamp-2"
                   >
                     {order.product?.title || "Бараа"}
                   </Link>
                   <p className="text-sm font-bold text-primary mt-2">
-                    1 x{" "}
-                    {(
-                      order.total_amount ||
-                      order.product?.price ||
-                      0
-                    ).toLocaleString()}{" "}
-                    ₮
+                    1 x {subTotal.toLocaleString()} ₮
                   </p>
                 </div>
               </div>
@@ -213,10 +258,10 @@ const OrderDetailPage = () => {
                     Хүлээн авагч
                   </p>
                   <p className="text-sm font-medium text-slate-900 dark:text-white">
-                    {order.shipping_info?.firstName || "Мэдээлэл алга"}
+                    {shippingInfo.firstName || "Мэдээлэл алга"}
                   </p>
                   <p className="text-sm text-slate-600 dark:text-slate-300">
-                    {order.shipping_info?.phone}
+                    {shippingInfo.phone || ""}
                   </p>
                 </div>
                 <div>
@@ -224,10 +269,10 @@ const OrderDetailPage = () => {
                     Хаяг
                   </p>
                   <p className="text-sm font-medium text-slate-900 dark:text-white">
-                    {order.shipping_info?.city}, {order.shipping_info?.district}
+                    {shippingInfo.city || ""}, {shippingInfo.district || ""}
                   </p>
                   <p className="text-sm text-slate-600 dark:text-slate-300">
-                    {order.shipping_info?.address}
+                    {shippingInfo.address || ""}
                   </p>
                 </div>
               </div>
@@ -244,16 +289,13 @@ const OrderDetailPage = () => {
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-slate-500">Барааны үнэ</span>
                   <span className="text-sm font-medium text-slate-900 dark:text-white">
-                    {(
-                      order.total_amount - (order.shipping_info?.fee || 15000)
-                    ).toLocaleString()}{" "}
-                    ₮
+                    {subTotal.toLocaleString()} ₮
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-slate-500">Хүргэлт</span>
                   <span className="text-sm font-medium text-slate-900 dark:text-white">
-                    {(order.shipping_info?.fee || 15000).toLocaleString()} ₮
+                    {shippingFee.toLocaleString()} ₮
                   </span>
                 </div>
                 <div className="h-px bg-gray-200 dark:bg-gray-800 my-2"></div>
@@ -262,10 +304,11 @@ const OrderDetailPage = () => {
                     Нийт дүн
                   </span>
                   <span className="text-xl font-bold text-primary">
-                    {(order.total_amount || 0).toLocaleString()} ₮
+                    {totalAmount.toLocaleString()} ₮
                   </span>
                 </div>
               </div>
+
               <button
                 onClick={() => window.print()}
                 className="w-full mt-6 py-3 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-all flex items-center justify-center gap-2"
@@ -274,8 +317,8 @@ const OrderDetailPage = () => {
                 хэвлэх
               </button>
 
-              {/* ҮНЭЛГЭЭ ӨГӨХ ТОВЧ - Зөвхөн хүргэгдсэн үед харагдана */}
-              {isDelivered && (
+              {/* ҮНЭЛГЭЭ ӨГӨХ ТОВЧ - Төлөгдсөн, Хүргэлтэнд гарсан, Хүргэгдсэн ямар ч үед харагдана */}
+              {["paid", "shipping", "delivered"].includes(order?.status) && (
                 <Link
                   to="/rating"
                   state={{
