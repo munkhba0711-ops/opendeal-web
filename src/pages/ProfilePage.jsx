@@ -448,7 +448,7 @@ const ProfilePage = () => {
                   </div>
                 </div>
                 <Link
-                  to={`/order-detail/${order.id}`}
+                  to={`/product-detail/${order.product?.id || order.product_id}`}
                   className="px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-lg text-sm font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
                 >
                   Дэлгэрэнгүй
